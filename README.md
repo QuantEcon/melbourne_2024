@@ -1,9 +1,9 @@
-# University of Melbourne Scientific Computing Workshop
+# University of Melbourne Computional Economics Workshop
 
 ![](qe-logo-large.png)
 
-This is the homepage for the computational economomics
-workshop to be held at the University of Melbourne on August 15th 2024.
+This is the homepage for the Computational Economics
+Workshop to be held at the University of Melbourne on August 15th 2024.
 
 ## Abstract
 
@@ -23,21 +23,11 @@ programming experience is required.
 
 ## Lead Instructor
 
-* [John Stachurski](https://johnstachurski.net/) (Australian National University)
+The lead instructor for the workshop will be [John Stachurski](https://johnstachurski.net/) (Australian National University).
 
-John Stachurski is a mathematical and computational economist working at the
-intersection of dynamic programming, probability theory, economics, and finance.
-His research is published in journals such as the Journal of Finance, the
-Journal of Economic Theory,  Econometrica, and Operations Research. In 2016 he
-co-founded [QuantEcon](https://quantecon.org) with [Thomas J.
-Sargent](https://en.wikipedia.org/wiki/Thomas_J._Sargent). He has run workshops
-on computational methods and high-performance computing at institutions such as
-the International Monetary Fund and the Federal Reserve Bank of Chicago, as well
-as universities including NYU, Columbia, MIT, Berkeley, Stanford, Yale,
-Princeton and UCLA.
+## Guest Instructors
 
-* Other instructors TBA
-
+The workshop will include a session titled Computational Economics in Action, with guest lectures [James Hansen](https://sites.google.com/site/jamesfrhansen/home) and [Yong Song](https://sites.google.com/view/ysong1).
 
 ## Times and Date
 
@@ -53,8 +43,7 @@ Princeton and UCLA.
 
 ### Location
 
-* TBA
-
+* Room 404, FBE Building 111 Barry St, Carlton
 
 
 ## Topics
