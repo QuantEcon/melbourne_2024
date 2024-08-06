@@ -1,6 +1,10 @@
-# University of Melbourne Computional Economics Workshop
+# Computional Economics Workshop
+
+## University of Melbourne 
 
 ![](qe-logo-large.png)
+
+----
 
 This is the homepage for the Computational Economics
 Workshop to be held at the University of Melbourne on August 15th 2024.
