@@ -128,7 +128,7 @@ OK, so we figured out how to handle the problem above numerically.
 
 But now let's make it harder.
 
-What if I tell you that X is created as follows:
+What if I tell you that $X$ is created as follows:
 
 1. $\sigma$ is drawn from the exponential distribution with rate $\lambda = 2.0$
 2. $\mu$ is drawn from a Beta$(a, b)$ distribution where $a=1.0$ and $b=3.0$
@@ -170,9 +170,13 @@ Of course, if we want a better approximation, we should generate more samples.
 
 +++
 
+
+
 ## Pricing a call option
 
 Now we're ready to price a European call option under the assumption of risk neutrality.
+
+### Set up
 
 The price satisfies
 
@@ -185,17 +189,26 @@ where
 1. $\beta$ is a discount factor,
 2. $n$ is the expiry date,
 2. $K$ is the strike price and
-3. $\{S_t\}$ is the price of the underlying asset at each time $t$.
+3. $S_n$ is the price of the underlying asset after $n$ periods.
 
 For example, consider a call option to buy stock in Amazon at strike price $K$. 
 
-The owner has the right (but not the obligation) to buy 1 share in Amazon at price $K$ after $n$ days.  
+The owner has the right (but not the obligation) to buy 1 share in Amazon at
+price $K$ after $n$ days.  
 
 The payoff is therefore $\max\{S_n - K, 0\}$
 
 The risk-neutral price is the expectation of the payoff, discounted to current value.
 
 Notice that this is another example of computing $P = \mathbb E f(X)$
+
+In all of what follows we will use
+
+```{code-cell} python3
+n, β, K = 10, 0.99, 100
+```
+
+It remains only to specify the distribution of $S_n$.
 
 
 +++
@@ -215,7 +228,7 @@ where
 $$ 
     \sigma_t = \exp(h_t), 
     \quad
-        h_{t+1} = \rho h_t + \nu \eta_{t+1}
+    h_{t+1} = \rho h_t + \nu \eta_{t+1}
 $$
 
 Here $\{\xi_t\}$ and $\{\eta_t\}$ are IID and standard normal.
@@ -223,16 +236,55 @@ Here $\{\xi_t\}$ and $\{\eta_t\}$ are IID and standard normal.
 (This is a **stochastic volatility** model, where the volatility $\sigma_t$
 varies over time.)
 
-Here's a simulation of the paths:
+Here's a simulation of 1_000 paths.
+
+We use the default values 
+
+```{code-cell} ipython3
+μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10, 0
+```
+
+(Here `S_0` is $S_0$ and `h_0` is $h_0$.)
+
+```{code-cell} ipython3
+M, n = 1_000, 10
+μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10, 0
+s_0 = np.log(S_0)
+s_n = np.empty(M)
+for m in range(M):
+    s, h = s_0, h_0
+    for t in range(n):
+        s = s + μ + np.exp(h) * np.random.randn()
+        h = ρ * h + ν * np.random.randn()
+    s_n[m] = s
+```
+
+Let's histogram the $M$ values of $s_n$
+
+```{code-cell} ipython3
+fig, ax = plt.subplots()
+ax.hist(s_n, bins=25, alpha=0.5)
+plt.show()
+```
+
+Actually what we want is $S_n = \exp(s_n)$, so let's look at the distribution.
+
+```{code-cell} ipython3
+S_n = np.exp(s_n)
+fig, ax = plt.subplots()
+ax.hist(S_n, bins=25, alpha=0.5)
+plt.show()
+```
+
+We can see that it's heavy-tailed
+
+* many small observations
+* a few very large ones
 
 
-+++
+### Computing the price of the option
 
-Use the defaults `μ, ρ, ν, S0, h0 = 0.0001, 0.1, 0.001, 10, 0`.
-
-(Here `S0` is $S_0$ and `h0` is $h_0$.)
-
-By generating $M$ paths $s_0, \ldots, s_n$, compute the Monte Carlo estimate 
+Now we have observations of the share price, we can get an estimate of the option price via
 
 $$
     \hat P_M 
@@ -242,18 +294,190 @@ $$
 $$
     
 
+```{code-cell} ipython3
+price = β**n * np.mean(np.maximum(S_n - K, 0))
+price 
+```
+
+Let's write a function to do this
+
+We'll use the following default for $M$
+
+```{code-cell} ipython3
+medium_M = 1_000_000
+```
+
+```{code-cell} ipython3
+def compute_call_price_py(β=β,
+                           μ=μ,
+                           S_0=S_0,
+                           h_0=h_0,
+                           K=K,
+                           n=n,
+                           ρ=ρ,
+                           ν=ν,
+                           M=medium_M,
+                           seed=1234):
+    np.random.seed(seed)
+    s_0 = np.log(S_0)
+    s_n = np.empty(M)
+    for m in range(M):
+        s, h = s_0, h_0
+        for t in range(n):
+            s = s + μ + np.exp(h) * np.random.randn()
+            h = ρ * h + ν * np.random.randn()
+        s_n[m] = s
+    S_n = np.exp(s_n)
+    expectation = np.mean(np.maximum(S_n - K, 0))
+
+    return β**n * expectation
+```
+
+Let's try computing the price
+
+```{code-cell} ipython3
+%time compute_call_price_py(seed=1)
+```
+The runtime is very long, even with moderate sample size $M$
+
+Moreover, the sample size is still too small!
+
+To see this, let's try again with a different seed
+
+```{code-cell} ipython3
+%time compute_call_price_py(seed=2)
+```
+
+Notice the big variation in the price --- the variance of our estimate is too high.
+
 +++
 
+
 ## NumPy Version
+
+
+```{code-cell} ipython3
+def compute_call_price_np(β=β,
+                          μ=μ,
+                          S_0=S_0,
+                          h_0=h_0,
+                          K=K,
+                          n=n,
+                          ρ=ρ,
+                          ν=ν,
+                          M=medium_M,
+                          seed=1234):
+    np.random.seed(seed)
+    s = np.full(M, np.log(S_0))
+    h = np.full(M, h_0)
+    for t in range(n):
+        Z = np.random.randn(2, M)
+        s = s + μ + np.exp(h) * Z[0, :]
+        h = ρ * h + ν * Z[1, :]
+    expectation = np.mean(np.maximum(np.exp(s) - K, 0))
+        
+    return β**n * expectation
+```
+
+Now computation of the option price estimate is much faster.
+
+```{code-cell} ipython3
+%time compute_call_price_np(seed=1)
+```
+
+This means that we can estimate the price using a serious sample size
+
+```{code-cell} ipython3
+large_M = 10 * medium_M
+%time compute_call_price_np(M=large_M, seed=1)
+```
+
+Let's try with a different seed to get a sense of the variance.
+
+```{code-cell} ipython3
+%time compute_call_price_np(M=large_M, seed=2)
+```
+
+OK, the sample size is *still* too small, which tells us that we need more
+speed.
+
+Let's leave $M$ fixed at `large_M` but try to make the routine faster
 
 +++
 
 ## NumPy + Numba Version
 
 
-of the price, applying Numba and parallelization.
+How well can we do applying Numba and parallelization?
+
+```{code-cell} ipython3
+import numba 
+
+@numba.jit
+def compute_call_price_numba(β=β,
+                             μ=μ,
+                             S_0=S_0,
+                             h_0=h_0,
+                             K=K,
+                             n=n,
+                             ρ=ρ,
+                             ν=ν,
+                             M=medium_M,
+                             seed=1234):
+    np.random.seed(seed)
+    s = np.full(M, np.log(S_0))
+    h = np.full(M, h_0)
+    for t in range(n):
+        Z = np.random.randn(2, M)
+        s = s + μ + np.exp(h) * Z[0, :]
+        h = ρ * h + ν * Z[1, :]
+    expectation = np.mean(np.maximum(np.exp(s) - K, 0))
+        
+    return β**n * expectation
+```
+
+
+```{code-cell} ipython3
+%time compute_call_price_numba(M=large_M)
+```
 
 +++
+
+## Parallel Numba-only version
+
+Let's try a Numba version without NumPy and with parallelization.
+
+```{code-cell} ipython3
+@numba.jit(parallel=True)
+def compute_call_price_numba_2(β=β,
+                               μ=μ,
+                               S_0=S_0,
+                               h_0=h_0,
+                               K=K,
+                               n=n,
+                               ρ=ρ,
+                               ν=ν,
+                               M=medium_M,
+                               seed=1234):
+    np.random.seed(seed)
+    s_0 = np.log(S_0)
+    s_n = np.empty(M)
+    for m in prange(M):
+        s, h = s_0, h_0
+        for t in range(n):
+            s = s + μ + np.exp(h) * np.random.randn()
+            h = ρ * h + ν * np.random.randn()
+        s_n[m] = s
+    S_n = np.exp(s_n)
+    expectation = np.mean(np.maximum(S_n - K, 0))
+
+    return β**n * expectation
+```
+
+
+```{code-cell} ipython3
+%time compute_call_price_numba(M=large_M)
+```
 
 ## JAX Version
 
@@ -269,25 +493,21 @@ import jax.numpy as jnp
 ```
 
 ```{code-cell} ipython3
-M = 10_000_000
 
-n, β, K = 20, 0.99, 100
-μ, ρ, ν, S0, h0 = 0.0001, 0.1, 0.001, 10, 0
-
-@jax.jit
 def compute_call_price_jax(β=β,
                            μ=μ,
-                           S0=S0,
-                           h0=h0,
+                           S_0=S_0,
+                           h_0=h_0,
                            K=K,
                            n=n,
                            ρ=ρ,
                            ν=ν,
-                           M=M,
-                           key=jax.random.PRNGKey(1)):
+                           M=1_000_000,
+                           seed=1234):
 
-    s = jnp.full(M, np.log(S0))
-    h = jnp.full(M, h0)
+    key=jax.random.PRNGKey(seed)
+    s = jnp.full(M, np.log(S_0))
+    h = jnp.full(M, h_0)
     for t in range(n):
         key, subkey = jax.random.split(key)
         Z = jax.random.normal(subkey, (2, M))
@@ -302,15 +522,15 @@ Let's run it once to compile it:
 
 ```{code-cell} ipython3
 %%time 
-compute_call_price_jax().block_until_ready()
+price = compute_call_price_jax(M=large_M)
+print(price)
 ```
 
 And now let's time it:
 
 ```{code-cell} ipython3
 %%time 
-compute_call_price_jax().block_until_ready()
+price = compute_call_price_jax(M=large_M)
+print(price)
 ```
 
-```{solution-end}
-```
