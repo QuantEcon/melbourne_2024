@@ -55,12 +55,15 @@ $$
 
 But what if $f$ is a more complex function, such as
 
-$$f(x) = \ln(1 + X + \exp(X) + X^{1/2})$$ 
+$$
+    f(x) = \ln(1 + x + \exp(x) + x^{1/2})
+$$ 
 
 Let's also suppose that $X$ is exponential, meaning that its density is
 
 $$
-g(x) = \lambda \exp(-\lambda x)
+    g(x) = \lambda \exp(-\lambda x)
+    \quad \text{for } x \geq 0
 $$
 
 How would you compute $\mathbb E f(X)$ in this case?
@@ -71,9 +74,12 @@ How would you compute $\mathbb E f(X)$ in this case?
 
 One option is to use numerical integration.
 
-We want to integrate $h(x) = f(x) g(x)$ where $g$ is the exponential density.
+Letting
 
-That is, we want to compute
+* $g$ be the exponential density and
+* $h(x) = f(x) g(x)$,
+
+we want to compute
 
 $$
 \mathbb E f(X) 
@@ -101,7 +107,7 @@ fig, ax = plt.subplots()
 a, b = 0, 8
 x_full = np.linspace(a, b, 1000)
 y_full = h(x_full)
-ax.plot(x_full, y_full, 'r', linewidth=2, label='$h(x)$')
+ax.plot(x_full, y_full, linewidth=2, label='$h(x)$')
 ax.legend()
 plt.show()
 ```
@@ -136,23 +142,25 @@ integral
 x_full = np.linspace(a, b, 1000)
 y_full = h(x_full)
 fig, ax = plt.subplots()
-ax.plot(x_full, y_full, 'r', linewidth=2, label='$h(x)$')
+ax.plot(x_full, y_full, linewidth=2, label='$h(x)$')
 
 # Plot trapezoids
 for i in range(n):
     x0 = a + i * (b - a) / n
     x1 = a + (i + 1) * (b - a) / n
     ax.fill_between([x0, x1], [0, 0], [h(x0), h(x1)], 
-                    color='blue', alpha=0.3, edgecolor='black')
+                    color='green', alpha=0.3, edgecolor='black')
 
-ax.set_title(f'estimated integral with {n} grid points = {integral:.3f}')
+ax.set_title(f'estimated integral with {n+1} grid points = {integral:.3f}')
 ax.set_xlabel('$x$')
-ax.set_ylabel('$h(x)$')
 ax.legend()
 plt.show()
 ```
 
-OK, so we figured out how to handle the problem above numerically.
+
+### A harder problem
+
+OK, so we figured out how to handle the problem above.
 
 But now let's make it harder.
 
@@ -165,6 +173,7 @@ What if I tell you that $X$ is created as follows:
 
 Now how would you compute $\mathbb E f(X)$?
 
+
 ```{code-cell} ipython3
 for i in range(20):
     print("Solution below!")
@@ -175,10 +184,11 @@ for i in range(20):
 To solve the problem numerically we can use Monte Carlo:
 
 1. Generate $n$ IID draws $(X_i)$ of $X$
-2. Approximate $\mathbb E f(X)$ via $(1/n) \sum_{i=1}^n f(X_i)$
+2. Approximate the mean $\mathbb E f(X)$ via the sample mean $(1/n) \sum_{i=1}^n f(X_i)$
 
 ```{code-cell} ipython3
 def draw_x():
+    "Draw one observation of X."
     σ = np.random.exponential(scale=1/2)
     μ = np.random.beta(a=1.0, b=3.0)
     Y = μ + σ * np.random.randn()
@@ -186,7 +196,9 @@ def draw_x():
 ```
 
 ```{code-cell} ipython3
-x_samples = [draw_x() for i in range(10_000)]
+n = 10_000
+# Draw n observations of X and put them in a NumPy array
+x_samples = [draw_x() for i in range(n)]
 x_samples = np.array(x_samples)
 ```
 
@@ -194,9 +206,10 @@ x_samples = np.array(x_samples)
 np.mean(f(x_samples))
 ```
 
-Of course, if we want a better approximation, we should generate more samples.
+Of course, if we want a better approximation, we should increase $n$.
 
 +++
+
 
 ## Pricing a call option
 
@@ -242,13 +255,14 @@ It remains only to specify the distribution of $S_n$.
 
 Often the distribution of $S_n$ is not a simple distribution.
 
-As one example, let's set $s_t = \ln S_t$ and assume that the log stock price obeys 
+As one example, let's set $s_t = \ln S_t$ for all $t$ and assume that the log stock price obeys 
 
 $$ 
 \ln s_{t+1} = \ln s_t + \mu + \sigma_t \xi_{t+1}
+\quad \text{with } s_0 \text{ given}
 $$
 
-where 
+and
 
 $$ 
     \sigma_t = \exp(h_t), 
@@ -397,6 +411,11 @@ Notice the big variation in the price --- the variance of our estimate is too hi
 +++
 
 ## NumPy Version
+
+To increase speed, let's write a vectorized version where all paths are updated
+together.
+
+We'll use the NumPy library to manage the vector of share prices.
 
 ```{code-cell} ipython3
 def compute_call_price_np(β=β,
@@ -552,17 +571,13 @@ print(price)
 
 +++
 
-Let's take the simple version above and compile the entire function using JAX
+Let's take the simple JAX version above and compile the entire function.
 
 ```{code-cell} ipython3
 compute_call_price_jax_compiled = jax.jit(compute_call_price_jax, static_argnums=(8, ))
 ```
 
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_compiled(M=large_M)
-print(price)
-```
+We run once to compile.
 
 ```{code-cell} ipython3
 %%time 
@@ -570,55 +585,13 @@ price = compute_call_price_jax_compiled(M=large_M)
 print(price)
 ```
 
-### Compiled JAX version with fori loop
-
-Here's a slightly more sophisticated JAX implementation.
-
-```{code-cell} ipython3
-def compute_call_price_jax_fori(β=β,
-                               μ=μ,
-                               S_0=S_0,
-                               h_0=h_0,
-                               K=K,
-                               n=n,
-                               ρ=ρ,
-                               ν=ν,
-                               M=1_000_000,
-                               seed=1234):
-
-    key=jax.random.PRNGKey(seed)
-    Z = jax.random.normal(key, (2, n, M))
-    s = jnp.full(M, np.log(S_0))
-    h = jnp.full(M, h_0)
-
-    def update(t, state):
-        s, h = state
-        s = s + μ + jnp.exp(h) * Z[0, t, :]
-        h = ρ * h + ν * Z[1, t, :]
-        return s, h
-
-    s, h = jax.lax.fori_loop(0, n, update, (s, h))
-    S = jnp.exp(s)
-    expectation = jnp.mean(jnp.maximum(S - K, 0))
-    return β**n * expectation
-```
-
-```{code-cell} ipython3
-compute_call_price_jax_fori_compiled = jax.jit(compute_call_price_jax_fori, static_argnums=(8, ))
-```
+And now let's time it.
 
 ```{code-cell} ipython3
 %%time 
-price = compute_call_price_jax_fori_compiled(M=large_M)
+price = compute_call_price_jax_compiled(M=large_M)
 print(price)
 ```
 
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_fori_compiled(M=large_M)
-print(price)
-```
+Now we have a really big speed gain relative to NumPy.
 
-```{code-cell} ipython3
-
-```
