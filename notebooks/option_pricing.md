@@ -37,41 +37,64 @@ Before discussing option pricing we'll quickly review Monte Carlo integration an
 Suppose that we want to evaluate
 
 $$
-P = \mathbb E f(X)
+    \mathbb E f(X)
 $$
 
 where $X$ is a random variable or vector and $f$ is some given function.
 
 This is easy in some cases
 
-* e.g., $f(x) = x^2$ and $X \sim N(0,1)$ $\implies$ $\mathbb E f(X) = 1$.
+For example, if $f(x) = x^2$ and $X \sim N(0,1)$, then 
 
-But what if 
+$$
+    \mathbb E f(X) 
+    = \mathbb E X^2
+    = \mathbb E (X - \mathbb E X)^2
+    = 1
+$$
+
+But what if $f$ is a more complex function, such as
 
 $$f(x) = \ln(1 + X + \exp(X) + X^{1/2})$$ 
 
-and $X$ is exponential?
+Let's also suppose that $X$ is exponential, meaning that its density is
+
+$$
+g(x) = \lambda \exp(-\lambda x)
+$$
 
 How would you compute $\mathbb E f(X)$ in this case?
 
-### Numerical integration
-
-One option here is to use a numerical integration method
-
 +++
 
+### Numerical integration
+
+One option is to use numerical integration.
+
 We want to integrate $h(x) = f(x) g(x)$ where $g$ is the exponential density.
+
+That is, we want to compute
+
+$$
+\mathbb E f(X) 
+    = \int_0^\infty f(x) g(x) d x
+    = \int_0^\infty h(x) d x
+$$
+
+First we define $h$
 
 ```{code-cell} ipython3
 def g(x, λ=1.0):
     return λ * np.exp(- λ * x)
 
 def f(x):
-    return np.log(1 + x + np.exp(x) + np.sqrt(x)) * g(x)
+    return np.log(1 + x + np.exp(x) + np.sqrt(x)) 
 
 def h(x):
     return f(x) * g(x)
 ```
+
+Let's plot $h$ to see what it looks like.
 
 ```{code-cell} ipython3
 fig, ax = plt.subplots()
@@ -100,7 +123,8 @@ def trapezoidal_rule(u, a=0, b=5, n=6):
 Let's integrate:
 
 ```{code-cell} ipython3
-integral, x, y = trapezoidal_rule(h)
+a, b, n = 0, 5, 6
+integral, x, y = trapezoidal_rule(h, a=a, b=b, n=n)
 ```
 
 ```{code-cell} ipython3
@@ -109,14 +133,12 @@ integral
 
 ```{code-cell} ipython3
 # Plot function
-a, b = x.min(), x.max()
 x_full = np.linspace(a, b, 1000)
 y_full = h(x_full)
 fig, ax = plt.subplots()
 ax.plot(x_full, y_full, 'r', linewidth=2, label='$h(x)$')
 
 # Plot trapezoids
-n = len(x) + 1
 for i in range(n):
     x0 = a + i * (b - a) / n
     x1 = a + (i + 1) * (b - a) / n
@@ -313,7 +335,7 @@ $$
     \hat P_M 
     := \beta^n \mathbb E \max\{ S_n - K, 0 \} 
     \approx
-    \frac{1}{M} \sum_{m=1}^M \max \{S_n^m - K, 0 \}
+    \beta^n \frac{1}{M} \sum_{m=1}^M \max \{S_n^m - K, 0 \}
 $$
 
 ```{code-cell} ipython3
@@ -426,9 +448,9 @@ Let's leave $M$ fixed at `large_M` but try to make the routine faster
 
 +++
 
-## Parallel Numba-only version
+## Parallel Numba version
 
-Let's try a Numba version without NumPy and with parallelization.
+Let's try a Numba version with parallelization.
 
 ```{code-cell} ipython3
 
@@ -549,54 +571,3 @@ price = compute_call_price_jax_compiled(M=large_M)
 print(price)
 ```
 
-### Compiled version with fori_loop
-
-```{code-cell} ipython3
-def compute_call_price_jax_fori(β=β,
-                                μ=μ,
-                                S_0=S_0,
-                                h_0=h_0,
-                                K=K,
-                                n=n,
-                                ρ=ρ,
-                                ν=ν,
-                                M=1_000_000,
-                                seed=1234):
-
-    key=jax.random.PRNGKey(seed)
-    s = jnp.full(M, np.log(S_0))
-    h = jnp.full(M, h_0)
-
-    def update(t, state):
-        s, h, key = state
-        key, subkey = jax.random.split(key)
-        Z = jax.random.normal(subkey, (2, M))
-        s = s + μ + jnp.exp(h) * Z[0, :]
-        h = ρ * h + ν * Z[1, :]
-        return s, h, key
-
-    s, h, key = jax.lax.fori_loop(0, n, update, (s, h, key))
-    expectation = jnp.mean(jnp.maximum(jnp.exp(s) - K, 0))
-        
-    return β**n * expectation
-```
-
-```{code-cell} ipython3
-compute_call_price_jax_fori = jax.jit(compute_call_price_jax_fori, static_argnums=(8, ))
-```
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_fori(M=large_M)
-print(price)
-```
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_fori(M=large_M)
-print(price)
-```
-
-```{code-cell} ipython3
-
-```
