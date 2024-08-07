@@ -19,12 +19,18 @@ kernelspec:
 
 ----
 
++++
+
+In this notebook we use option pricing as an application to test some Python scientific computing libraries.
+
 ```{code-cell} ipython3
 import numpy as np
 import matplotlib.pyplot as plt
 ```
 
 ## Introduction to Monte Carlo integration
+
+Before discussing option pricing we'll quickly review Monte Carlo integration and why it's useful.
 
 ### Computing expectations
 
@@ -50,7 +56,7 @@ How would you compute $\mathbb E f(X)$ in this case?
 
 ### Numerical integration
 
-One option here is to use a numerical integration method 
+One option here is to use a numerical integration method
 
 +++
 
@@ -170,8 +176,6 @@ Of course, if we want a better approximation, we should generate more samples.
 
 +++
 
-
-
 ## Pricing a call option
 
 Now we're ready to price a European call option under the assumption of risk neutrality.
@@ -204,12 +208,11 @@ Notice that this is another example of computing $P = \mathbb E f(X)$
 
 In all of what follows we will use
 
-```{code-cell} python3
+```{code-cell} ipython3
 n, β, K = 10, 0.99, 100
 ```
 
 It remains only to specify the distribution of $S_n$.
-
 
 +++
 
@@ -236,19 +239,39 @@ Here $\{\xi_t\}$ and $\{\eta_t\}$ are IID and standard normal.
 (This is a **stochastic volatility** model, where the volatility $\sigma_t$
 varies over time.)
 
-Here's a simulation of 1_000 paths.
-
-We use the default values 
+We use the default values
 
 ```{code-cell} ipython3
-μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10, 0
+μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10.0, 0.0
 ```
 
-(Here `S_0` is $S_0$ and `h_0` is $h_0$.)
+Let's plot 12 of these paths:
+
+
+```{code-cell} ipython3
+M, n = 12, 10
+fig, axes = plt.subplots(2, 1, figsize=(6, 8))
+s_0 = np.log(S_0)
+for m in range(M):
+    s = np.empty(n+1)
+    s[0], h = s_0, h_0
+    for t in range(n):
+        s[t+1] = s[t] + μ + np.exp(h) * np.random.randn()
+        h = ρ * h + ν * np.random.randn()
+    axes[0].plot(s)
+    axes[1].plot(np.exp(s))
+axes[0].set_title('log share price over time')
+axes[1].set_title('share price over time')
+plt.show()
+```
+
+Here's a larger simulation, where we 
+
+* set $M = 1000$ and
+* generate $M$ draws of $s_n$
 
 ```{code-cell} ipython3
 M, n = 1_000, 10
-μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10, 0
 s_0 = np.log(S_0)
 s_n = np.empty(M)
 for m in range(M):
@@ -292,7 +315,6 @@ $$
     \approx
     \frac{1}{M} \sum_{m=1}^M \max \{S_n^m - K, 0 \}
 $$
-    
 
 ```{code-cell} ipython3
 price = β**n * np.mean(np.maximum(S_n - K, 0))
@@ -338,6 +360,7 @@ Let's try computing the price
 ```{code-cell} ipython3
 %time compute_call_price_py(seed=1)
 ```
+
 The runtime is very long, even with moderate sample size $M$
 
 Moreover, the sample size is still too small!
@@ -352,9 +375,7 @@ Notice the big variation in the price --- the variance of our estimate is too hi
 
 +++
 
-
 ## NumPy Version
-
 
 ```{code-cell} ipython3
 def compute_call_price_np(β=β,
@@ -405,51 +426,17 @@ Let's leave $M$ fixed at `large_M` but try to make the routine faster
 
 +++
 
-## NumPy + Numba Version
-
-
-How well can we do applying Numba and parallelization?
-
-```{code-cell} ipython3
-import numba 
-
-@numba.jit
-def compute_call_price_numba(β=β,
-                             μ=μ,
-                             S_0=S_0,
-                             h_0=h_0,
-                             K=K,
-                             n=n,
-                             ρ=ρ,
-                             ν=ν,
-                             M=medium_M,
-                             seed=1234):
-    np.random.seed(seed)
-    s = np.full(M, np.log(S_0))
-    h = np.full(M, h_0)
-    for t in range(n):
-        Z = np.random.randn(2, M)
-        s = s + μ + np.exp(h) * Z[0, :]
-        h = ρ * h + ν * Z[1, :]
-    expectation = np.mean(np.maximum(np.exp(s) - K, 0))
-        
-    return β**n * expectation
-```
-
-
-```{code-cell} ipython3
-%time compute_call_price_numba(M=large_M)
-```
-
-+++
-
 ## Parallel Numba-only version
 
 Let's try a Numba version without NumPy and with parallelization.
 
 ```{code-cell} ipython3
+
+import numba
+from numba import prange
+
 @numba.jit(parallel=True)
-def compute_call_price_numba_2(β=β,
+def compute_call_price_numba(β=β,
                                μ=μ,
                                S_0=S_0,
                                h_0=h_0,
@@ -474,6 +461,9 @@ def compute_call_price_numba_2(β=β,
     return β**n * expectation
 ```
 
+```{code-cell} ipython3
+%time compute_call_price_numba(M=large_M)
+```
 
 ```{code-cell} ipython3
 %time compute_call_price_numba(M=large_M)
@@ -492,8 +482,11 @@ import jax
 import jax.numpy as jnp
 ```
 
-```{code-cell} ipython3
+### Simple JAX version
 
+Let's start with a simple version that looks like the NumPy version.
+
+```{code-cell} ipython3
 def compute_call_price_jax(β=β,
                            μ=μ,
                            S_0=S_0,
@@ -534,3 +527,76 @@ price = compute_call_price_jax(M=large_M)
 print(price)
 ```
 
+### Compiled JAX version
+
++++
+
+Let's take the simple version above and compile the entire function using JAX
+
+```{code-cell} ipython3
+compute_call_price_jax_compiled = jax.jit(compute_call_price_jax, static_argnums=(8, ))
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_compiled(M=large_M)
+print(price)
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_compiled(M=large_M)
+print(price)
+```
+
+### Compiled version with fori_loop
+
+```{code-cell} ipython3
+def compute_call_price_jax_fori(β=β,
+                                μ=μ,
+                                S_0=S_0,
+                                h_0=h_0,
+                                K=K,
+                                n=n,
+                                ρ=ρ,
+                                ν=ν,
+                                M=1_000_000,
+                                seed=1234):
+
+    key=jax.random.PRNGKey(seed)
+    s = jnp.full(M, np.log(S_0))
+    h = jnp.full(M, h_0)
+
+    def update(t, state):
+        s, h, key = state
+        key, subkey = jax.random.split(key)
+        Z = jax.random.normal(subkey, (2, M))
+        s = s + μ + jnp.exp(h) * Z[0, :]
+        h = ρ * h + ν * Z[1, :]
+        return s, h, key
+
+    s, h, key = jax.lax.fori_loop(0, n, update, (s, h, key))
+    expectation = jnp.mean(jnp.maximum(jnp.exp(s) - K, 0))
+        
+    return β**n * expectation
+```
+
+```{code-cell} ipython3
+compute_call_price_jax_fori = jax.jit(compute_call_price_jax_fori, static_argnums=(8, ))
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_fori(M=large_M)
+print(price)
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_fori(M=large_M)
+print(price)
+```
+
+```{code-cell} ipython3
+
+```
