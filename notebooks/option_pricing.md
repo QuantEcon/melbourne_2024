@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -269,7 +269,6 @@ We use the default values
 
 Let's plot 12 of these paths:
 
-
 ```{code-cell} ipython3
 M, n = 12, 10
 fig, axes = plt.subplots(2, 1, figsize=(6, 8))
@@ -453,7 +452,6 @@ Let's leave $M$ fixed at `large_M` but try to make the routine faster
 Let's try a Numba version with parallelization.
 
 ```{code-cell} ipython3
-
 import numba
 from numba import prange
 
@@ -528,7 +526,8 @@ def compute_call_price_jax(β=β,
         Z = jax.random.normal(subkey, (2, M))
         s = s + μ + jnp.exp(h) * Z[0, :]
         h = ρ * h + ν * Z[1, :]
-    expectation = jnp.mean(jnp.maximum(jnp.exp(s) - K, 0))
+    S = jnp.exp(s)
+    expectation = jnp.mean(jnp.maximum(S - K, 0))
         
     return β**n * expectation
 ```
@@ -571,3 +570,55 @@ price = compute_call_price_jax_compiled(M=large_M)
 print(price)
 ```
 
+### Compiled JAX version with fori loop
+
+Here's a slightly more sophisticated JAX implementation.
+
+```{code-cell} ipython3
+def compute_call_price_jax_fori(β=β,
+                               μ=μ,
+                               S_0=S_0,
+                               h_0=h_0,
+                               K=K,
+                               n=n,
+                               ρ=ρ,
+                               ν=ν,
+                               M=1_000_000,
+                               seed=1234):
+
+    key=jax.random.PRNGKey(seed)
+    Z = jax.random.normal(key, (2, n, M))
+    s = jnp.full(M, np.log(S_0))
+    h = jnp.full(M, h_0)
+
+    def update(t, state):
+        s, h = state
+        s = s + μ + jnp.exp(h) * Z[0, t, :]
+        h = ρ * h + ν * Z[1, t, :]
+        return s, h
+
+    s, h = jax.lax.fori_loop(0, n, update, (s, h))
+    S = jnp.exp(s)
+    expectation = jnp.mean(jnp.maximum(S - K, 0))
+    return β**n * expectation
+```
+
+```{code-cell} ipython3
+compute_call_price_jax_fori_compiled = jax.jit(compute_call_price_jax_fori, static_argnums=(8, ))
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_fori_compiled(M=large_M)
+print(price)
+```
+
+```{code-cell} ipython3
+%%time 
+price = compute_call_price_jax_fori_compiled(M=large_M)
+print(price)
+```
+
+```{code-cell} ipython3
+
+```
