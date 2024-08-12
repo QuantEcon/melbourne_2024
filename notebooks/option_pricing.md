@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -157,7 +157,6 @@ ax.legend()
 plt.show()
 ```
 
-
 ### A harder problem
 
 OK, so we figured out how to handle the problem above.
@@ -172,7 +171,6 @@ What if I tell you that $X$ is created as follows:
 4. $X$ is taken as the minimum of $Z$ and $2.0$
 
 Now how would you compute $\mathbb E f(X)$?
-
 
 ```{code-cell} ipython3
 for i in range(20):
@@ -209,7 +207,6 @@ np.mean(f(x_samples))
 Of course, if we want a better approximation, we should increase $n$.
 
 +++
-
 
 ## Pricing a call option
 
@@ -594,4 +591,3 @@ print(price)
 ```
 
 Now we have a really big speed gain relative to NumPy.
-

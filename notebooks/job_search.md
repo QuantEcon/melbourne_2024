@@ -14,12 +14,9 @@ kernelspec:
 # Job Search
 
 ----
-#### John Stachurski
-#### Prepared for the CBC Computational Workshop (2024)
+#### John Stachurski (August 2024)
 
 ----
-
-Uncomment if necessary
 
 ```{code-cell} ipython3
 #!pip install quantecon
@@ -71,13 +68,15 @@ where $(Z_t)_{t \geq 0}$ is IID and standard normal.
 
 We discretize this wage process using Tauchen's method to produce a stochastic matrix $P$
 
-### Rewards
-
 Since jobs are permanent, the return to accepting wage offer $w$ today is
 
 $$
     w + \beta w + \beta^2 w + \frac{w}{1-\beta}
 $$
+
+The worker chooses between accepting and rejecting in order to maximize expected lifetime value.
+
+### The Bellman equation
 
 The Bellman equation is
 
@@ -88,7 +87,44 @@ $$
     \right\}
 $$
 
+The solution to this equation is called the **value function** and we denote it $v^*$.
+
+It is known that a policy is optimal if and only if 
+
+$$
+    \sigma(w) = \mathbf 1 
+        \left\{
+            \frac{w}{1-\beta} \geq c + \beta \sum_{w'} v^*(w') P(w, w')
+        \right\}
+$$
+
+
+
+### Algorithm
+
 We solve this model using value function iteration.
+
+This means that we use the Bellman operator
+
+$$
+    (Tv)(w) = \max
+    \left\{
+            \frac{w}{1-\beta}, c + \beta \sum_{w'} v(w') P(w, w')
+    \right\}
+$$
+
+The steps are
+
+1. pick an initial guess $v$
+2. iterate with $T$ to produce $v_k = T^k v$
+3. choose a $v_k$ **greedy** policy $\sigma$, meaning that $\sigma$ satisfies
+
+$$
+    \sigma(w) = \mathbf 1 
+        \left\{
+            \frac{w}{1-\beta} \geq c + \beta \sum_{w'} v_k(w') P(w, w')
+        \right\}
+$$
 
 +++
 
@@ -97,7 +133,12 @@ We solve this model using value function iteration.
 Let's set up a namedtuple to store information needed to solve the model.
 
 ```{code-cell} ipython3
-Model = namedtuple('Model', ('n', 'w_vals', 'P', 'β', 'c'))
+Model = namedtuple('Model', 
+                   ('n',        # wage grid size
+                    'w_vals',   # wage values 
+                    'P',        # transition matrix
+                    'β',        # discount factor
+                    'c'))       # unemployment compensation
 ```
 
 The function below holds default values and populates the namedtuple.
@@ -152,10 +193,6 @@ def T(v, model):
     return jnp.maximum(e, h)
 ```
 
-Question: Is this a pure function?
-
-+++
-
 The next function computes the optimal policy under the assumption that $v$ is
                  the value function.
 
@@ -204,10 +241,6 @@ def vfi(model, max_iter=10_000, tol=1e-4):
     σ_star = get_greedy(v_star, model)
     return v_star, σ_star
 ```
-
-Question: Is this a pure function?
-
-+++
 
 ## Computing the solution
 
