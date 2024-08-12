@@ -225,39 +225,49 @@
 \begin{frame}
     \frametitle{Topics}
 
+    Computational frameworks --- the state of play
+
     \begin{itemize}
-        \item Types of programming languages
+        \item Background on scientific computing
         \vspace{0.5em}
-        \item Vectorization vs JIT compilers
-        \vspace{0.5em}
-        \item AI-driven scientific computing
+        \item Current and future trends: AI-driven scientific computing
         \vspace{0.5em}
     \end{itemize}
 
+    \vspace{0.5em}
+    What computational skills should economists learn in 2024?
 
     \vspace{0.5em}
     \vspace{0.5em}
-    \vspace{0.5em}
-    Target audience: people who wish to improve their coding skills
-    \vspace{0.5em}
-    \vspace{0.5em}
-    \vspace{0.5em}
-
+    
     Please feel free to question / debate / share your experiences
 
 \end{frame}
 
 
 \begin{frame}
+
+    Flow
+    %
+    \begin{itemize}
+        \item 1:00 -- 2:30 Lecture 1
+        \item 2:30 -- 3:00 afternoon tea (staff lounge)
+        \item 3:00 -- 4:00 Lecture 2
+        \item 4:00 -- 4:15 break
+        \item 4:15 -- 5:00 Computational Economics in Action
+    \end{itemize}
     
+
+    \vspace{0.5em}
+
     Slides, code:
 
     \vspace{0.5em}
-    \vspace{0.5em}
-    \vspace{0.5em}
+
     \begin{center}
-    \url{https://github.com/QuantEcon/melbourne_2024}
+        \url{https://github.com/QuantEcon/melbourne_2024}
     \end{center}
+
 
 \end{frame}
 
@@ -406,16 +416,19 @@ print(k)
         \item slow loops / arithmetic
     \end{itemize}
 
-    \pause
-    \vspace{0.5em}
-    \vspace{0.5em}
-    \vspace{0.5em}
-    \vspace{0.5em}
-    Why is pure Python slow?
 
 
 \end{frame}
 
+
+\begin{frame}
+    
+    \vspace{0.5em}
+    Why is pure Python slow?
+
+    \vspace{0.5em}
+
+\end{frame}
 
 \begin{frame}[fragile]
     \frametitle{Problem 1: Type checking}
@@ -474,9 +487,21 @@ str
 \end{frame}
 
 
+
 \begin{frame}
     
-    So how can we get 
+    \begin{figure}
+       \centering
+        \scalebox{.6}{\includegraphics{ppf.pdf}}
+    \end{figure}
+
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{Shifting the Frontier}
+    
+    How can we get 
 
     \begin{center}
     good execution speeds \navy{and} high productivity / interactivity?
@@ -488,11 +513,11 @@ str
 
 
 \begin{frame}
-    \frametitle{MATLAB's vectorization trick}
+    \frametitle{Gen 1: MATLAB's vectorization trick}
     
     \begin{figure}
        \begin{center} % l b r t
-        \scalebox{.6}{\includegraphics[trim={2cm 8cm 6cm 3cm},clip]{matlab.pdf}}
+        \scalebox{.36}{\includegraphics{matlab.pdf}}
        \end{center}
     \end{figure}
 
@@ -501,11 +526,11 @@ str
 
 
 \begin{frame}
-    \frametitle{Python + NumPy -- stealing MATLAB's idea}
+    \frametitle{Python + NumPy -- MATLAB workalike}
 
     \begin{figure}
        \begin{center} % l b r t
-        \scalebox{.6}{\includegraphics[trim={2cm 8cm 6cm 3cm},clip]{numpy.pdf}}
+        \scalebox{.36}{\includegraphics{numpy.pdf}}
        \end{center}
     \end{figure}
 
@@ -538,29 +563,36 @@ str
 \end{frame}
 
 
+\begin{frame}
+
+    Some trends: 
+
+    \begin{figure}
+       \begin{center}
+        \scalebox{0.36}{\includegraphics{matlab_numpy_fortran.png}}
+       \end{center}
+    \end{figure}
+
+\end{frame}
+
+
 
 
 \begin{frame}[fragile]
-    \frametitle{Julia --- rise of the JIT compilers}
+    \frametitle{New trend --- rise of the JIT compilers}
     
-    \begin{minted}{julia}
-function solow(k0, α=0.4, δ=0.1, n=1_000)
-    k = k0
-    for i in 1:(n-1)
-        k = s * k^α + (1 - δ) * k
-    end
-    return k
-end
-
-solow(0.2)
-    \end{minted}
-
-    Function \texttt{solow} is efficiently JIT compiled after the first call
+    \begin{itemize}
+        \item Code is optimized by the JIT compiler at runtime
+        \vspace{0.5em}
+        \item Optimization is between function boundaries
+        \vspace{0.5em}
+        \item Optimization specializes on input types
+    \end{itemize}
 
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Python + Numba copy Julia}
+    \frametitle{Example: Python + Numba}
     
     \begin{minted}{python}
 from numba import jit
@@ -576,35 +608,7 @@ solow(0.2)
     \end{minted}
 
 
-    Runs at same speed as Julia / C / Fortran
-
-\end{frame}
-
-
-\begin{frame}
-
-    Some trends: 
-
-    \begin{figure}
-       \begin{center}
-        \scalebox{0.4}{\includegraphics{pvr.png}}
-       \end{center}
-    \end{figure}
-
-\end{frame}
-
-
-
-\begin{frame}
-    
-    So where does JAX fit in?
-
-        \vspace{0.5em}
-        \vspace{0.5em}
-        \vspace{0.5em}
-        \vspace{0.5em}
-        \vspace{0.5em}
-    Let's start with some motivation and background
+    Runs at same speed as C / Fortran
 
 \end{frame}
 
