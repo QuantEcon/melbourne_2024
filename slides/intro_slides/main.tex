@@ -211,7 +211,7 @@
 \author{John Stachurski}
 
 
-\date{June 2024}
+\date{August 2024}
 
 
 \begin{document}
@@ -225,17 +225,41 @@
 \begin{frame}
     \frametitle{Topics}
 
-    Computational frameworks --- the state of play
+    \brown{Part 1}: Workshop
 
     \begin{itemize}
         \item Background on scientific computing
         \vspace{0.5em}
         \item Current and future trends: AI-driven scientific computing
         \vspace{0.5em}
+        \item Applications  (hands on, using Python)
+        \vspace{0.5em}
     \end{itemize}
 
     \vspace{0.5em}
-    What computational skills should economists learn in 2024?
+    \vspace{0.5em}
+    \brown{Part 2}: Computational economics in action
+
+    \begin{itemize}
+        \item  Joint with James Hansen and Yong Song
+    \end{itemize}
+
+
+\end{frame}
+
+\begin{frame}
+    
+    Key questions:
+
+    \vspace{0.5em}
+
+    \begin{itemize}
+        \item What computational skills should economists learn in 2024?
+        \vspace{0.5em}
+        \item What are some interesting applications?
+        \vspace{0.5em}
+    \end{itemize}
+
 
     \vspace{0.5em}
     \vspace{0.5em}
@@ -243,7 +267,6 @@
     Please feel free to question / debate / share your experiences
 
 \end{frame}
-
 
 \begin{frame}
 
@@ -303,14 +326,22 @@
 \begin{frame}
     \frametitle{Old school: static types \& AOT compilers}
 
-    \Eg Consider the Solow model
+    \Eg Consider the Solow--Swan growth dynamics
     %
     \begin{equation*}
         k_{t+1} = s k_t^\alpha + (1 - \delta) k_t
-        \qquad \text{with } k_0 \text{ given}
     \end{equation*}
     %
 
+        \vspace{0.5em}
+        \vspace{0.5em}
+    Task: compute $k_n$ given 
+    %
+    \begin{enumerate}
+        \item $n \in \NN$
+        \item initial condition $k_0$ 
+        \item parameter values
+    \end{enumerate}
 
         \vspace{0.5em}
         \vspace{0.5em}
@@ -332,13 +363,12 @@ program main
  integer, parameter :: dp=kind(0.d0)                          
  integer :: n=1000
  real(dp) :: s=0.3_dp
- real(dp) :: a=1.0_dp
  real(dp) :: delta=0.1_dp
  real(dp) :: alpha=0.4_dp
  real(dp) :: k=0.2_dp
  integer :: i
  do i = 1, n - 1                                                
-  k = a * s * k**alpha + (1 - delta) * k
+  k = s * k**alpha + (1 - delta) * k
  end do
  print *,'k = ', k
 end program main
@@ -396,6 +426,25 @@ print(k)
     \end{minted}
 
 \end{frame}
+
+
+\begin{frame}[fragile]
+
+    Often this will be written using a function
+    
+    \begin{minted}{python}
+def solow(k0, α=0.4, δ=0.1, s=0.3, n=1_000):
+    k = k0
+    for i in range(n-1):
+        k = s * k**α + (1 - δ) * k
+    return k
+
+print(solow(0.2))
+    \end{minted}
+
+\end{frame}
+
+
 
 
 
@@ -499,7 +548,7 @@ str
 
 
 \begin{frame}
-    \frametitle{Shifting the Frontier}
+    \frametitle{Shifting the frontier}
     
     How can we get 
 
@@ -563,6 +612,7 @@ str
 \end{frame}
 
 
+
 \begin{frame}
 
     Some trends: 
@@ -598,7 +648,7 @@ str
 from numba import jit
 
 @jit
-def solow(k0, α=0.4, δ=0.1, n=1_000):
+def solow(k0, α=0.4, δ=0.1, s=0.3, n=1_000):
     k = k0
     for i in range(n-1):
         k = s * k**α + (1 - δ) * k
@@ -612,6 +662,19 @@ solow(0.2)
 
 \end{frame}
 
+
+\begin{frame}
+    \frametitle{Why are JIT compilers on the rise?}
+
+    \begin{itemize}
+        \item JIT $+$ interpreter retains interactivity
+        \vspace{0.5em}
+        \item high degree of flexibility
+        \vspace{0.5em}
+        \item compiler can adapt on the fly to available hardware
+    \end{itemize}
+
+\end{frame}
 
 
 \begin{frame}
@@ -801,15 +864,18 @@ solow(0.2)
 
 \begin{frame}
     
+    Popular platforms with these features
 
-    \begin{figure}
-       \begin{center}
-        \scalebox{2.0}{\includegraphics[trim={0cm 0cm 0cm 0cm},clip]{jax.png}}
-       \end{center}
-    \end{figure}
+    \vspace{0.5em}
+    \begin{itemize}
+        \item Pytorch
+        \vspace{0.5em}
+        \item Google JAX (with Python)
+    \end{itemize}
 
 
 \end{frame}
+
 
 
 \begin{frame}[fragile]
@@ -836,29 +902,27 @@ grad_loss = jit(grad(loss))  # Now use gradient descent
 \end{frame}
 
 
-
 \begin{frame}
     \frametitle{JAX for economists}
 
-    I do mathematical modeling / optimization / simulation
-    
-    \vspace{0.5em}
+    How about mathematical modeling / optimization / simulation?
 
-    My wishlist:
+    \vspace{0.5em}
+    For these tasks, I recommend JAX
 
     \begin{itemize}
+        \item more consistent with other Python libraries
+        \vspace{0.5em}
+        \item exposes lower level building blocks vis-a-vis PyTorch
+        \vspace{0.5em}
         \item \underline{automated} parallelization
-    \vspace{0.5em}
+        \vspace{0.5em}
         \item JIT compiler 
-    \vspace{0.5em}
+        \vspace{0.5em}
         \item integrated autodiff
-    \vspace{0.5em}
+        \vspace{0.5em}
         \item automatically / transparently supports CPUs / GPUs / TPUs 
     \end{itemize}
-
-    \vspace{0.5em}
-    \vspace{0.5em}
-    JAX ticks these boxes
 
 \end{frame}
 
