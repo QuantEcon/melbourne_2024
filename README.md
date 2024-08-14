@@ -32,7 +32,7 @@ The lead instructor for the workshop will be [John Stachurski](https://johnstach
 
 ## Guest Instructors
 
-The workshop will include a session titled Computational Economics in Action, with guest lectures [James Hansen](https://sites.google.com/site/jamesfrhansen/home) and [Yong Song](https://sites.google.com/view/ysong1).
+The workshop will include a session titled Computational Economics in Action, with lectures by [James Hansen](https://sites.google.com/site/jamesfrhansen/home) and [Yong Song](https://sites.google.com/view/ysong1).
 
 ## Times and Date
 
