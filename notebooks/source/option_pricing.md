@@ -81,7 +81,7 @@ $$
 \frac{1}{M} \sum_{m=1}^M f(X_m) \to \mathbb E f(X)
 $$
 
-Here's a function to draw one $X_i$
+Here's a function to draw one $X_m$
 
 ```{code-cell} ipython3
 import numpy as np  
@@ -139,8 +139,8 @@ Now we're ready to price a European call option under the assumption of risk neu
 
 We consider a call option where
 
-2. $K$ is the strike price, and
-3. $S_n$ is the price of the underlying asset after $n$ days.
+1. $K$ is the strike price, and
+2. $S_n$ is the price of the underlying asset after $n$ days.
 
 The owner has the right (but not the obligation) to buy 1 share at price $K$ after $n$ days.  
 
@@ -257,10 +257,6 @@ ax.hist(S_n, bins=25, alpha=0.5)
 plt.show()
 ```
 
-We can see that it's heavy-tailed
-
-* many small observations
-* a few very large ones
 
 
 ### Computing the price of the option
