@@ -167,9 +167,9 @@ def compute_call_price_np(β=β,
     s = np.full(M, np.log(S_0))
     h = np.full(M, h_0)
     for t in range(n):
-        Z = np.random.randn(2, M)
-        s = s + μ + np.exp(h) * Z[0, :]
-        h = ρ * h + ν * Z[1, :]
+        U, V = np.random.randn(M), np.random.randn(M)
+        s = s + μ + np.exp(h) * U
+        h = ρ * h + ν * V
     expectation = np.mean(np.maximum(np.exp(s) - K, 0))
         
     return β**n * expectation
@@ -268,7 +268,7 @@ def compute_call_price_numba_parallel(β=β,
 ```
 
 ```{code-cell} ipython3
-%time compute_call_price_numba_parallel()
+%time compute_call_price_numba_parallel(M=100_000_000)
 ```
 
 ## JAX Version
@@ -308,10 +308,11 @@ def compute_call_price_jax(β=β,
     s = jnp.full(M, np.log(S_0))
     h = jnp.full(M, h_0)
     for t in range(n):
-        key, subkey = jax.random.split(key)
-        Z = jax.random.normal(subkey, (2, M))
+        Z = jax.random.normal(key, (2, M))
         s = s + μ + jnp.exp(h) * Z[0, :]
         h = ρ * h + ν * Z[1, :]
+        key = jax.random.fold_in(key, t)
+
     S = jnp.exp(s)
     expectation = jnp.mean(jnp.maximum(S - K, 0))
         
@@ -341,7 +342,7 @@ print(price)
 Let's take the simple JAX version above and compile the entire function.
 
 ```{code-cell} ipython3
-compute_call_price_jax_compiled = jax.jit(compute_call_price_jax, static_argnums=(8, ))
+compute_call_price_jax_compiled = jax.jit(compute_call_price_jax, static_argnums=(5, 8, ))
 ```
 
 We run once to compile.

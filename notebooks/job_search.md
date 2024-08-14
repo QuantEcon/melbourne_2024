@@ -56,6 +56,9 @@ We study an elementary model where
 * the horizon is infinite
 * an unemployment agent discounts the future via discount factor $\beta \in (0,1)$
 
+
+An unemployed worker tries to maximize an expected sum of discounted lifetime payoffs.
+
 ### Set up
 
 The wage offer process obeys
@@ -98,6 +101,7 @@ $$
         \right\}
 $$
 
+Here the meaning of $\sigma(w) = 1$ is "stop" (accept), while $\sigma(w) = 0$ is "continue" (reject).
 
 
 ### Algorithm

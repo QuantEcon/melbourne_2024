@@ -72,7 +72,7 @@ for i in range(20):
 
 To solve the problem numerically we can use Monte Carlo:
 
-1. Generate $M$ IID draws $(X_i)$ of $X$
+1. Generate $M$ IID draws $(X_m)$ of $X$
 2. Approximate the mean $\mathbb E f(X)$ via the sample mean $(1/M) \sum_{m=1}^M f(X_m)$
 
 This works because, as $M \to \infty$,
@@ -127,7 +127,7 @@ def f(x):
 np.mean(f(x_samples))
 ```
 
-Of course, if we want a better approximation, we should increase $n$.
+Of course, if we want a better approximation, we should increase $M$.
 
 +++
 
@@ -139,21 +139,17 @@ Now we're ready to price a European call option under the assumption of risk neu
 
 We consider a call option where
 
-2. $n$ is the expiry date  (e.g., expires in $n$ days),
-2. $K$ is the strike price and
-3. $S_n$ is the price of the underlying asset after $n$ periods.
+2. $K$ is the strike price, and
+3. $S_n$ is the price of the underlying asset after $n$ days.
 
-For example, consider a call option to buy stock in Amazon at strike price $K$. 
-
-The owner has the right (but not the obligation) to buy 1 share in Amazon at
-price $K$ after $n$ days.  
+The owner has the right (but not the obligation) to buy 1 share at price $K$ after $n$ days.  
 
 The payoff is therefore $\max\{S_n - K, 0\}$
 
 The risk-neutral price is the expected payoff, discounted to current value:
 
 $$
-P = \beta^n \mathbb E \max\{ S_n - K, 0 \}
+    P = \beta^n \mathbb E \max\{ S_n - K, 0 \}
 $$
 
 
@@ -280,7 +276,13 @@ price = β**n * np.mean(np.maximum(S_n - K, 0))
 price 
 ```
 
-Let's write a function to do this
+We shouldn't take this value seriously because the sample size is very small.
+
+Next let's
+
+1. write a function to compute the price using the same method,
+1. increase the sample size, and
+1. run the function to get a better estimate.
 
 ```{code-cell} ipython3
 def compute_call_price_py(β=β,
