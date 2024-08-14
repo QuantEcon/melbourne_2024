@@ -24,11 +24,7 @@ kernelspec:
 In this notebook we use option pricing as an application to learn some Python
 syntax.
 
-
-```{code-cell} ipython3
-import numpy as np
-import matplotlib.pyplot as plt
-```
++++
 
 ## Introduction to Monte Carlo integration
 
@@ -76,32 +72,58 @@ for i in range(20):
 
 To solve the problem numerically we can use Monte Carlo:
 
-1. Generate $n$ IID draws $(X_i)$ of $X$
-2. Approximate the mean $\mathbb E f(X)$ via the sample mean $(1/n) \sum_{i=1}^n f(X_i)$
+1. Generate $M$ IID draws $(X_i)$ of $X$
+2. Approximate the mean $\mathbb E f(X)$ via the sample mean $(1/M) \sum_{m=1}^M f(X_m)$
+
+This works because, as $M \to \infty$,
+
+$$
+\frac{1}{M} \sum_{m=1}^M f(X_m) \to \mathbb E f(X)
+$$
 
 Here's a function to draw one $X_i$
 
 ```{code-cell} ipython3
+import numpy as np  
+
 def draw_x():
     "Draw one observation of X."
     σ = np.random.exponential(scale=1/2)
     μ = np.random.beta(a=1.0, b=3.0)
     Y = μ + σ * np.random.randn()
-    return np.minimum(np.exp(Y), 2.0)
+    Z = np.exp(Y)
+    return np.minimum(Z, 2.0)
 ```
 
-Let's draw $n = 10,000$ observations
+Let's test it:
 
 ```{code-cell} ipython3
-n = 10_000
-x_samples = np.empty(n)
-for i in range(n):
-    x_samples[i] = draw_x()
+draw_x()
 ```
 
-Now we compute the sample mean
+```{code-cell} ipython3
+draw_x()
+```
 
 ```{code-cell} ipython3
+draw_x()
+```
+
+Let's draw $M = 10,000$ observations
+
+```{code-cell} ipython3
+M = 10_000
+x_samples = np.empty(M)
+for m in range(M):
+    x_samples[m] = draw_x()
+```
+
+Now we define $f$ and compute the sample mean
+
+```{code-cell} ipython3
+def f(x):
+    return np.log(1 + np.abs(np.sin(x)))
+    
 np.mean(f(x_samples))
 ```
 
@@ -115,16 +137,9 @@ Now we're ready to price a European call option under the assumption of risk neu
 
 ### Set up
 
-The price satisfies
+We consider a call option where
 
-$$
-P = \beta^n \mathbb E \max\{ S_n - K, 0 \}
-$$
-
-where
-
-1. $\beta$ is a discount factor,
-2. $n$ is the expiry date,
+2. $n$ is the expiry date  (e.g., expires in $n$ days),
 2. $K$ is the strike price and
 3. $S_n$ is the price of the underlying asset after $n$ periods.
 
@@ -135,9 +150,14 @@ price $K$ after $n$ days.
 
 The payoff is therefore $\max\{S_n - K, 0\}$
 
-The risk-neutral price is the expectation of the payoff, discounted to current value.
+The risk-neutral price is the expected payoff, discounted to current value:
 
-Notice that this is another example of computing $P = \mathbb E f(X)$
+$$
+P = \beta^n \mathbb E \max\{ S_n - K, 0 \}
+$$
+
+
+Notice that this is another example of computing $\mathbb E f(X)$
 
 In all of what follows we will use
 
@@ -153,7 +173,11 @@ It remains only to specify the distribution of $S_n$.
 
 Often the distribution of $S_n$ is not a simple distribution.
 
-As one example, let's set $s_t = \ln S_t$ for all $t$ and assume that the log stock price obeys 
+As one example, let's set 
+
+$$s_t = \ln S_t$$
+
+and assume that the log stock price obeys 
 
 $$ 
 \begin{aligned}
@@ -164,6 +188,11 @@ $$
 
 Here $\{U_t\}$ and $\{V_t\}$ are IID and standard normal.
 
+The current values $S_0$ and $h_0$ are given.
+
+These initial conditions and the laws of motion above define the random variable
+$S_n$.
+
 We use the default values
 
 ```{code-cell} ipython3
@@ -173,7 +202,9 @@ We use the default values
 Let's plot 12 of these paths:
 
 ```{code-cell} ipython3
-M, n = 12, 10
+import matplotlib.pyplot as plt  
+
+M = 12
 fig, axes = plt.subplots(2, 1, figsize=(6, 8))
 s_0 = np.log(S_0)
 
@@ -251,7 +282,6 @@ price
 
 Let's write a function to do this
 
-
 ```{code-cell} ipython3
 def compute_call_price_py(β=β,
                            μ=μ,
@@ -303,3 +333,6 @@ Notice the big variation in the price --- the variance of our estimate is too hi
 
 How can we make this faster?
 
+```{code-cell} ipython3
+
+```

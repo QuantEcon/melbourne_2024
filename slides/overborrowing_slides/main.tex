@@ -205,7 +205,7 @@
 
 \title{Computational Economics in Action}
 
-\subtitle{Solving the Overborrowing Model}
+\subtitle{Solving the Bianchi Overborrowing Model}
 
 
 \author{John Stachurski}
@@ -222,10 +222,110 @@
 
 
 \begin{frame}
+    \frametitle{Overview}
 
-    foobar 
+    A brief discussion of some computational work I did for the Central Bank of
+    Chile in May
+    
+    This work was related to the overborrowing model of Javier Bianchi
+
+    \begin{itemize}
+        \item ``Overborrowing and systemic externalities.'' AER (2011)
+    \end{itemize}
+
+    My task was to increase computational efficiency
 
 \end{frame}
+
+\begin{frame}
+    \frametitle{Background}
+
+    The Central Bank of Chile (CBC) is 
+    %
+    \begin{itemize}
+        \item the equivalent of RBA in Chile
+        \item strongly research-oriented
+    \end{itemize}
+
+    Has dealt with waves of financial and political instability
+
+    \begin{itemize}
+        \item Pinochet dictatorship
+        \item financial crisis of 1982
+        \item 2019-22 protests
+    \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+    
+    \begin{figure}
+       \begin{center}
+        \scalebox{0.15}{\includegraphics[trim={0cm 0cm 0cm 0cm},clip]{protests.png}}
+       \end{center}
+    \end{figure}
+
+    Source: \url{https://danielkhv.com/}
+
+\end{frame}
+
+
+
+\begin{frame}
+    
+    The CBC recognizes the importance of working with nonlinear models
+
+    \begin{itemize}
+        \item crises tend to have self-reinforcing components
+    \end{itemize}
+
+    The CBC uses a number of models to track data and measure vulnerability to
+    crises
+
+    One is Bianchi's overborrowing model
+
+    \begin{itemize}
+        \item private sector tends to borrow execessively in good times
+        \item negative shocks lead to sudden stops
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    
+    The existing version 
+
+    \begin{itemize}
+        \item solved using MATLAB
+        \item running on a workstation with 1TB RAM and 350 CPUs
+        \item runtime $\approx$ 7.5 hours
+    \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+    
+    The version I wrote in May
+
+    \begin{itemize}
+        \item solved using Python / JAX
+        \item runs on a single GPU
+        \item runtime $<$ 6 seconds
+    \end{itemize}
+
+    Efficiency gains
+
+    \begin{itemize}
+        \item fully JIT-compiled
+        \item better memory management
+        \item better parallelization
+        \item improved algorithm
+    \end{itemize}
+
+\end{frame}
+
 
 \end{document}
 

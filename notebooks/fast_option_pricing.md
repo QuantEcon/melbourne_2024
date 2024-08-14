@@ -33,17 +33,19 @@ import matplotlib.pyplot as plt
 
 We saw that our Python code for option pricing was pretty slow.
 
-Indeed, pure Python, without scientific libraries, is not fast.
+In essence, this is because our loops were written in pure Python
+
+Pure Python loops are not fast.
 
 This has led some people to claim that Python is too slow for computational
 economics.
 
-These people are idiots -- I mean, misinformed -- so please ignore them.
+These people are ~idiots~ misinformed -- so please ignore them.
 
 Evidence: AI teams are solving optimization problems in $\mathbb R^d$ with $d >
 $ 1 trillion using Pytorch / JAX
 
-So I'm pretty sure we can use Python for our research.
+So I'm pretty sure we can use Python for computational economics.
 
 But first let's try to understand the issues.
 
@@ -57,7 +59,6 @@ x + y
 ```
 
 This is integer addition, which is different from floating point addition
-
 
 ```{code-cell} ipython3
 x, y = 1.0, 2.0
@@ -75,7 +76,6 @@ Notice that we use the same symbol `+` on each occasion.
 
 The Python interpreter figures out the correct action by type checking:
 
-
 ```{code-cell} ipython3
 a, b = 'foo', 10
 type(a)
@@ -88,8 +88,9 @@ type(b)
 But think of all the type checking in our option pricing function --- the
 overhead is huge!!
 
-
 ```{code-cell} ipython3
+n, β, K = 10, 0.99, 100
+μ, ρ, ν, S_0, h_0 = 0.0001, 0.01, 0.001, 10.0, 0.0
 def compute_call_price_py(β=β,
                            μ=μ,
                            S_0=S_0,
@@ -98,7 +99,7 @@ def compute_call_price_py(β=β,
                            n=n,
                            ρ=ρ,
                            ν=ν,
-                           M=10_000_000,
+                           M=1_000_000,
                            seed=1234):
     np.random.seed(seed)
 
@@ -120,7 +121,6 @@ def compute_call_price_py(β=β,
     return β**n * expectation
 ```
 
-
 ### Issue 2:  Memory Management
 
 Pure Python emphasizes flexibility and hence cannot attain maximal efficiency
@@ -128,13 +128,11 @@ vis-a-vis memory management.
 
 For example,
 
-
 ```{code-cell} ipython3
 import sys
 x = [1.0, 2.0]  
 sys.getsizeof(x) * 8   # number of bits
 ```
-
 
 ### Issue 3:  Parallelization
 
@@ -144,8 +142,9 @@ multiple workers.
 This can't be done efficiently with pure Python but certainly can with the right
 Python libraries.
 
++++
 
-## NumPy Version
+## Vectorization
 
 As a first pass at improving efficiency, here's a vectorized version where all paths are updated together.
 
@@ -192,7 +191,6 @@ Let's try a Numba version.
 
 This version uses a just-in-time (JIT) compiler to eliminate type-checking.
 
-
 ```{code-cell} ipython3
 import numba
 
@@ -229,8 +227,6 @@ def compute_call_price_numba(β=β,
 ```{code-cell} ipython3
 %time compute_call_price_numba()
 ```
-
-
 
 ## Numba Plus Parallelization
 
@@ -272,10 +268,8 @@ def compute_call_price_numba_parallel(β=β,
 ```
 
 ```{code-cell} ipython3
-%time compute_call_price_numb_parallela()
+%time compute_call_price_numba_parallel()
 ```
-
-
 
 ## JAX Version
 
@@ -367,4 +361,3 @@ print(price)
 ```
 
 Now we have a really big speed gain relative to NumPy.
-
