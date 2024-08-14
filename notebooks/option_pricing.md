@@ -21,7 +21,9 @@ kernelspec:
 
 +++
 
-In this notebook we use option pricing as an application to test some Python scientific computing libraries.
+In this notebook we use option pricing as an application to learn some Python
+syntax.
+
 
 ```{code-cell} ipython3
 import numpy as np
@@ -42,128 +44,21 @@ $$
 
 where $X$ is a random variable or vector and $f$ is some given function.
 
-This is easy in some cases
-
-For example, if $f(x) = x^2$ and $X \sim N(0,1)$, then 
+This is easy if, say $f(x) = x$ and $X \sim N(0,1)$, because then 
 
 $$
     \mathbb E f(X) 
-    = \mathbb E X^2
-    = \mathbb E (X - \mathbb E X)^2
-    = 1
+    = \mathbb E X
+    = 0
 $$
 
-But what if $f$ is a more complex function, such as
+But what if 
 
 $$
-    f(x) = \ln(1 + x + \exp(x) + x^{1/2})
+    f(x) = \log(1 + |\sin(x)|)
 $$ 
 
-Let's also suppose that $X$ is exponential, meaning that its density is
-
-$$
-    g(x) = \lambda \exp(-\lambda x)
-    \quad \text{for } x \geq 0
-$$
-
-How would you compute $\mathbb E f(X)$ in this case?
-
-+++
-
-### Numerical integration
-
-One option is to use numerical integration.
-
-Letting
-
-* $g$ be the exponential density and
-* $h(x) = f(x) g(x)$,
-
-we want to compute
-
-$$
-\mathbb E f(X) 
-    = \int_0^\infty f(x) g(x) d x
-    = \int_0^\infty h(x) d x
-$$
-
-First we define $h$
-
-```{code-cell} ipython3
-def g(x, λ=1.0):
-    return λ * np.exp(- λ * x)
-
-def f(x):
-    return np.log(1 + x + np.exp(x) + np.sqrt(x)) 
-
-def h(x):
-    return f(x) * g(x)
-```
-
-Let's plot $h$ to see what it looks like.
-
-```{code-cell} ipython3
-fig, ax = plt.subplots()
-a, b = 0, 8
-x_full = np.linspace(a, b, 1000)
-y_full = h(x_full)
-ax.plot(x_full, y_full, linewidth=2, label='$h(x)$')
-ax.legend()
-plt.show()
-```
-
-Here's a really simple numerical integration routine that uses the trapezoidal rule.
-
-```{code-cell} ipython3
-def trapezoidal_rule(u, a=0, b=5, n=6):
-    """
-    Approximate the integral of u over [a, b] using the trapezoidal rule.
-    """
-    x = np.linspace(a, b, n+1)
-    y = u(x)
-    h = (b - a) / n
-    integral = (h / 2) * (y[0] + 2 * np.sum(y[1:-1]) + y[-1])
-    return integral, x, y
-```
-
-Let's integrate:
-
-```{code-cell} ipython3
-a, b, n = 0, 5, 6
-integral, x, y = trapezoidal_rule(h, a=a, b=b, n=n)
-```
-
-```{code-cell} ipython3
-integral
-```
-
-```{code-cell} ipython3
-# Plot function
-x_full = np.linspace(a, b, 1000)
-y_full = h(x_full)
-fig, ax = plt.subplots()
-ax.plot(x_full, y_full, linewidth=2, label='$h(x)$')
-
-# Plot trapezoids
-for i in range(n):
-    x0 = a + i * (b - a) / n
-    x1 = a + (i + 1) * (b - a) / n
-    ax.fill_between([x0, x1], [0, 0], [h(x0), h(x1)], 
-                    color='green', alpha=0.3, edgecolor='black')
-
-ax.set_title(f'estimated integral with {n+1} grid points = {integral:.3f}')
-ax.set_xlabel('$x$')
-ax.legend()
-plt.show()
-```
-
-### A harder problem
-
-OK, so we figured out how to handle the problem above.
-
-But now let's make it harder.
-
-What if I tell you that $X$ is created as follows:
+and $X$ is created as follows:
 
 1. $\sigma$ is drawn from the exponential distribution with rate $\lambda = 2.0$
 2. $\mu$ is drawn from a Beta$(a, b)$ distribution where $a=1.0$ and $b=3.0$
@@ -184,6 +79,8 @@ To solve the problem numerically we can use Monte Carlo:
 1. Generate $n$ IID draws $(X_i)$ of $X$
 2. Approximate the mean $\mathbb E f(X)$ via the sample mean $(1/n) \sum_{i=1}^n f(X_i)$
 
+Here's a function to draw one $X_i$
+
 ```{code-cell} ipython3
 def draw_x():
     "Draw one observation of X."
@@ -193,12 +90,16 @@ def draw_x():
     return np.minimum(np.exp(Y), 2.0)
 ```
 
+Let's draw $n = 10,000$ observations
+
 ```{code-cell} ipython3
 n = 10_000
-# Draw n observations of X and put them in a NumPy array
-x_samples = [draw_x() for i in range(n)]
-x_samples = np.array(x_samples)
+x_samples = np.empty(n)
+for i in range(n):
+    x_samples[i] = draw_x()
 ```
+
+Now we compute the sample mean
 
 ```{code-cell} ipython3
 np.mean(f(x_samples))
@@ -255,27 +156,18 @@ Often the distribution of $S_n$ is not a simple distribution.
 As one example, let's set $s_t = \ln S_t$ for all $t$ and assume that the log stock price obeys 
 
 $$ 
-\ln s_{t+1} = \ln s_t + \mu + \sigma_t \xi_{t+1}
-\quad \text{with } s_0 \text{ given}
+\begin{aligned}
+    s_{t+1} & = s_t + \mu + \exp(h_t) \, U_{t+1} \\
+    h_{t+1} & = \rho \, h_t + \nu \, V_{t+1}
+\end{aligned}
 $$
 
-and
-
-$$ 
-    \sigma_t = \exp(h_t), 
-    \quad
-    h_{t+1} = \rho h_t + \nu \eta_{t+1}
-$$
-
-Here $\{\xi_t\}$ and $\{\eta_t\}$ are IID and standard normal.
-
-(This is a **stochastic volatility** model, where the volatility $\sigma_t$
-varies over time.)
+Here $\{U_t\}$ and $\{V_t\}$ are IID and standard normal.
 
 We use the default values
 
 ```{code-cell} ipython3
-μ, ρ, ν, S_0, h_0 = 0.0001, 0.1, 0.001, 10.0, 0.0
+μ, ρ, ν, S_0, h_0 = 0.0001, 0.01, 0.001, 10.0, 0.0
 ```
 
 Let's plot 12 of these paths:
@@ -284,14 +176,19 @@ Let's plot 12 of these paths:
 M, n = 12, 10
 fig, axes = plt.subplots(2, 1, figsize=(6, 8))
 s_0 = np.log(S_0)
+
 for m in range(M):
     s = np.empty(n+1)
     s[0], h = s_0, h_0
     for t in range(n):
-        s[t+1] = s[t] + μ + np.exp(h) * np.random.randn()
-        h = ρ * h + ν * np.random.randn()
+        U, V = np.random.randn(2)
+        s[t+1] = s[t] + μ + np.exp(h) * U
+        h = ρ * h + ν * V
+        
     axes[0].plot(s)
-    axes[1].plot(np.exp(s))
+    S = np.exp(s)
+    axes[1].plot(S)
+    
 axes[0].set_title('log share price over time')
 axes[1].set_title('share price over time')
 plt.show()
@@ -306,11 +203,13 @@ Here's a larger simulation, where we
 M, n = 1_000, 10
 s_0 = np.log(S_0)
 s_n = np.empty(M)
+
 for m in range(M):
     s, h = s_0, h_0
     for t in range(n):
-        s = s + μ + np.exp(h) * np.random.randn()
-        h = ρ * h + ν * np.random.randn()
+        U, V = np.random.randn(2)
+        s = s + μ + np.exp(h) * U
+        h = ρ * h + ν * V
     s_n[m] = s
 ```
 
@@ -342,9 +241,6 @@ We can see that it's heavy-tailed
 Now we have observations of the share price, we can get an estimate of the option price via
 
 $$
-    \hat P_M 
-    := \beta^n \mathbb E \max\{ S_n - K, 0 \} 
-    \approx
     \beta^n \frac{1}{M} \sum_{m=1}^M \max \{S_n^m - K, 0 \}
 $$
 
@@ -355,11 +251,6 @@ price
 
 Let's write a function to do this
 
-We'll use the following default for $M$
-
-```{code-cell} ipython3
-medium_M = 1_000_000
-```
 
 ```{code-cell} ipython3
 def compute_call_price_py(β=β,
@@ -370,18 +261,23 @@ def compute_call_price_py(β=β,
                            n=n,
                            ρ=ρ,
                            ν=ν,
-                           M=medium_M,
+                           M=1_000_000,
                            seed=1234):
     np.random.seed(seed)
+
     s_0 = np.log(S_0)
     s_n = np.empty(M)
+
     for m in range(M):
         s, h = s_0, h_0
         for t in range(n):
-            s = s + μ + np.exp(h) * np.random.randn()
-            h = ρ * h + ν * np.random.randn()
+            U, V = np.random.randn(2)
+            s = s + μ + np.exp(h) * U
+            h = ρ * h + ν * V
         s_n[m] = s
+
     S_n = np.exp(s_n)
+
     expectation = np.mean(np.maximum(S_n - K, 0))
 
     return β**n * expectation
@@ -405,189 +301,5 @@ To see this, let's try again with a different seed
 
 Notice the big variation in the price --- the variance of our estimate is too high.
 
-+++
+How can we make this faster?
 
-## NumPy Version
-
-To increase speed, let's write a vectorized version where all paths are updated
-together.
-
-We'll use the NumPy library to manage the vector of share prices.
-
-```{code-cell} ipython3
-def compute_call_price_np(β=β,
-                          μ=μ,
-                          S_0=S_0,
-                          h_0=h_0,
-                          K=K,
-                          n=n,
-                          ρ=ρ,
-                          ν=ν,
-                          M=medium_M,
-                          seed=1234):
-    np.random.seed(seed)
-    s = np.full(M, np.log(S_0))
-    h = np.full(M, h_0)
-    for t in range(n):
-        Z = np.random.randn(2, M)
-        s = s + μ + np.exp(h) * Z[0, :]
-        h = ρ * h + ν * Z[1, :]
-    expectation = np.mean(np.maximum(np.exp(s) - K, 0))
-        
-    return β**n * expectation
-```
-
-Now computation of the option price estimate is much faster.
-
-```{code-cell} ipython3
-%time compute_call_price_np(seed=1)
-```
-
-This means that we can estimate the price using a serious sample size
-
-```{code-cell} ipython3
-large_M = 10 * medium_M
-%time compute_call_price_np(M=large_M, seed=1)
-```
-
-Let's try with a different seed to get a sense of the variance.
-
-```{code-cell} ipython3
-%time compute_call_price_np(M=large_M, seed=2)
-```
-
-OK, the sample size is *still* too small, which tells us that we need more
-speed.
-
-Let's leave $M$ fixed at `large_M` but try to make the routine faster
-
-+++
-
-## Parallel Numba version
-
-Let's try a Numba version with parallelization.
-
-```{code-cell} ipython3
-import numba
-from numba import prange
-
-@numba.jit(parallel=True)
-def compute_call_price_numba(β=β,
-                               μ=μ,
-                               S_0=S_0,
-                               h_0=h_0,
-                               K=K,
-                               n=n,
-                               ρ=ρ,
-                               ν=ν,
-                               M=medium_M,
-                               seed=1234):
-    np.random.seed(seed)
-    s_0 = np.log(S_0)
-    s_n = np.empty(M)
-    for m in prange(M):
-        s, h = s_0, h_0
-        for t in range(n):
-            s = s + μ + np.exp(h) * np.random.randn()
-            h = ρ * h + ν * np.random.randn()
-        s_n[m] = s
-    S_n = np.exp(s_n)
-    expectation = np.mean(np.maximum(S_n - K, 0))
-
-    return β**n * expectation
-```
-
-```{code-cell} ipython3
-%time compute_call_price_numba(M=large_M)
-```
-
-```{code-cell} ipython3
-%time compute_call_price_numba(M=large_M)
-```
-
-## JAX Version
-
-```{code-cell} ipython3
-!nvidia-smi
-```
-
-The following import is standard, replacing `import numpy as np`:
-
-```{code-cell} ipython3
-import jax
-import jax.numpy as jnp
-```
-
-### Simple JAX version
-
-Let's start with a simple version that looks like the NumPy version.
-
-```{code-cell} ipython3
-def compute_call_price_jax(β=β,
-                           μ=μ,
-                           S_0=S_0,
-                           h_0=h_0,
-                           K=K,
-                           n=n,
-                           ρ=ρ,
-                           ν=ν,
-                           M=1_000_000,
-                           seed=1234):
-
-    key=jax.random.PRNGKey(seed)
-    s = jnp.full(M, np.log(S_0))
-    h = jnp.full(M, h_0)
-    for t in range(n):
-        key, subkey = jax.random.split(key)
-        Z = jax.random.normal(subkey, (2, M))
-        s = s + μ + jnp.exp(h) * Z[0, :]
-        h = ρ * h + ν * Z[1, :]
-    S = jnp.exp(s)
-    expectation = jnp.mean(jnp.maximum(S - K, 0))
-        
-    return β**n * expectation
-```
-
-Let's run it once to compile it:
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax(M=large_M)
-print(price)
-```
-
-And now let's time it:
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax(M=large_M)
-print(price)
-```
-
-### Compiled JAX version
-
-+++
-
-Let's take the simple JAX version above and compile the entire function.
-
-```{code-cell} ipython3
-compute_call_price_jax_compiled = jax.jit(compute_call_price_jax, static_argnums=(8, ))
-```
-
-We run once to compile.
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_compiled(M=large_M)
-print(price)
-```
-
-And now let's time it.
-
-```{code-cell} ipython3
-%%time 
-price = compute_call_price_jax_compiled(M=large_M)
-print(price)
-```
-
-Now we have a really big speed gain relative to NumPy.

@@ -324,361 +324,7 @@
 
 
 \begin{frame}
-    \frametitle{Old school: static types \& AOT compilers}
-
-    \Eg Consider the Solow--Swan growth dynamics
-    %
-    \begin{equation*}
-        k_{t+1} = s k_t^\alpha + (1 - \delta) k_t
-    \end{equation*}
-    %
-
-        \vspace{0.5em}
-        \vspace{0.5em}
-    Task: compute $k_n$ given 
-    %
-    \begin{enumerate}
-        \item $n \in \NN$
-        \item initial condition $k_0$ 
-        \item parameter values
-    \end{enumerate}
-
-        \vspace{0.5em}
-        \vspace{0.5em}
-        \vspace{0.5em}
-
-    Fortran code:
-
-
-\end{frame}
-
-
-
-
-\begin{frame}[fragile]
-    
-    \begin{minted}{fortran}
-program main
- implicit none
- integer, parameter :: dp=kind(0.d0)                          
- integer :: n=1000
- real(dp) :: s=0.3_dp
- real(dp) :: delta=0.1_dp
- real(dp) :: alpha=0.4_dp
- real(dp) :: k=0.2_dp
- integer :: i
- do i = 1, n - 1                                                
-  k = s * k**alpha + (1 - delta) * k
- end do
- print *,'k = ', k
-end program main
-    \end{minted}
-
-\end{frame}
-
-
-
-\begin{frame}
-
-    Relative merits of Fortran / C / other static type AOT compiled languages?
-
-    \vspace{0.5em}
-    \vspace{0.5em}
-    \navy{Pros}
-
-    \begin{itemize}
-        \item fast loops / arithmetic
-    \end{itemize}
-
-
-    \vspace{0.5em}
-
-    \navy{Cons}
-
-    \begin{itemize}
-        \item low interactivity
-        \item time consuming to write / read / debug
-        \item hard to parallelize
-    \end{itemize}
-
-\end{frame}
-
-
-
-
-\begin{frame}[fragile]
-
-    For comparison, the same operation in Python:
-    
-    \begin{minted}{python}
-
-α = 0.4
-s = 0.3
-δ = 0.1
-n = 1_000
-k = 0.2
-
-for i in range(n):
-    k = s * k**α + (1 - δ) * k
-
-print(k)
-
-    \end{minted}
-
-\end{frame}
-
-
-\begin{frame}[fragile]
-
-    Often this will be written using a function
-    
-    \begin{minted}{python}
-def solow(k0, α=0.4, δ=0.1, s=0.3, n=1_000):
-    k = k0
-    for i in range(n-1):
-        k = s * k**α + (1 - δ) * k
-    return k
-
-print(solow(0.2))
-    \end{minted}
-
-\end{frame}
-
-
-
-
-
-\begin{frame}
-
-    Pros
-
-    \begin{itemize}
-        \item high interactivity
-        \item easy to write / read / debug
-    \end{itemize}
-
-    \vspace{0.5em}
-
-    Cons
-
-    \begin{itemize}
-        \item slow loops / arithmetic
-    \end{itemize}
-
-
-
-\end{frame}
-
-
-\begin{frame}
-    
-    \vspace{0.5em}
-    Why is pure Python slow?
-
-    \vspace{0.5em}
-
-\end{frame}
-
-\begin{frame}[fragile]
-    \frametitle{Problem 1: Type checking}
-
-    \begin{minted}{python}
-x, y = 1, 2
-z = x + y       
-
-x, y = 1.0, 2.0
-z = x + y      
-
-x, y = 'foo', 'bar'
-z = x + y     
-    \end{minted}
-
-    \vspace{0.5em}
-    \vspace{0.5em}
-
-How does Python know which operation to perform?
-
-\end{frame}
-
-
-\begin{frame}[fragile]
-
-    Answer: Python checks the type of the objects first
-
-    \begin{minted}{python}
->> x = 1
->> type(x)
-int
-    \end{minted}
-
-    \begin{minted}{python}
->> x = 'foo'
->> type(x)
-str
-    \end{minted}
-
-
-    In a large loop, this type checking generates massive overhead
-\end{frame}
-
-
-\begin{frame}[fragile]
-    \frametitle{Problem 2: Memory management}
-
-    \begin{minted}{python}
->>> import sys
->>> x = [1.0, 2.0]
->>> sys.getsizeof(x) * 8      # number of bits
-576                           # whaaaat???
-    \end{minted}
-
-
-\end{frame}
-
-
-
-\begin{frame}
-    
-    \begin{figure}
-       \centering
-        \scalebox{.6}{\includegraphics{ppf.pdf}}
-    \end{figure}
-
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{Shifting the frontier}
-    
-    How can we get 
-
-    \begin{center}
-    good execution speeds \navy{and} high productivity / interactivity?
-    \end{center}
-
-\end{frame}
-
-
-
-
-\begin{frame}
-    \frametitle{Gen 1: MATLAB's vectorization trick}
-    
-    \begin{figure}
-       \begin{center} % l b r t
-        \scalebox{.36}{\includegraphics{matlab.pdf}}
-       \end{center}
-    \end{figure}
-
-    
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{Python + NumPy -- MATLAB workalike}
-
-    \begin{figure}
-       \begin{center} % l b r t
-        \scalebox{.36}{\includegraphics{numpy.pdf}}
-       \end{center}
-    \end{figure}
-
-
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{Vectorization: pros and cons}
-
-    \navy{Pros}
-
-    \begin{itemize}
-        \item high interactivity 
-    \end{itemize}
-
-    \vspace{0.5em}
-    \vspace{0.5em}
-
-    \navy{Cons}
-
-    \begin{itemize}
-        \item some tasks cannot be efficiently vectorized
-        \vspace{0.2em}
-        \item cannot adapt flexibly to function arguments /
-            hardware
-    \end{itemize}
-
-
-\end{frame}
-
-
-
-\begin{frame}
-
-    Some trends: 
-
-    \begin{figure}
-       \begin{center}
-        \scalebox{0.36}{\includegraphics{matlab_numpy_fortran.png}}
-       \end{center}
-    \end{figure}
-
-\end{frame}
-
-
-
-
-\begin{frame}[fragile]
-    \frametitle{New trend --- rise of the JIT compilers}
-    
-    \begin{itemize}
-        \item Code is optimized by the JIT compiler at runtime
-        \vspace{0.5em}
-        \item Optimization is between function boundaries
-        \vspace{0.5em}
-        \item Optimization specializes on input types
-    \end{itemize}
-
-\end{frame}
-
-\begin{frame}[fragile]
-    \frametitle{Example: Python + Numba}
-    
-    \begin{minted}{python}
-from numba import jit
-
-@jit
-def solow(k0, α=0.4, δ=0.1, s=0.3, n=1_000):
-    k = k0
-    for i in range(n-1):
-        k = s * k**α + (1 - δ) * k
-    return k
-
-solow(0.2)
-    \end{minted}
-
-
-    Runs at same speed as C / Fortran
-
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{Why are JIT compilers on the rise?}
-
-    \begin{itemize}
-        \item JIT $+$ interpreter retains interactivity
-        \vspace{0.5em}
-        \item high degree of flexibility
-        \vspace{0.5em}
-        \item compiler can adapt on the fly to available hardware
-    \end{itemize}
-
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{AI-driven scientific computing}
+    \frametitle{Prelude: AI-driven scientific computing}
 
     AI is changing the world
 
@@ -717,6 +363,13 @@ solow(0.2)
         \vspace{0.5em}
         \item etc.
     \end{itemize}
+
+        \vspace{0.5em}
+        \vspace{0.5em}
+        \vspace{0.5em}
+        \vspace{0.5em}
+
+    What kinds of problems are they solving?
 
 \end{frame}
 
@@ -903,26 +556,28 @@ grad_loss = jit(grad(loss))  # Now use gradient descent
 
 
 \begin{frame}
-    \frametitle{JAX for economists}
+    \frametitle{Summary}
 
-    How about mathematical modeling / optimization / simulation?
+    We can't afford the same hardware as OpenAI but we do have access to cheaper
+    versions
 
     \vspace{0.5em}
-    For these tasks, I recommend JAX
+    And most of the relevent code is open source
 
+    \vspace{0.5em}
+    Thus, AI-driven scientific computing is giving us many exciting and
+    powerful new tools
+
+    \vspace{0.5em}
     \begin{itemize}
-        \item more consistent with other Python libraries
-        \vspace{0.5em}
-        \item exposes lower level building blocks vis-a-vis PyTorch
-        \vspace{0.5em}
-        \item \underline{automated} parallelization
-        \vspace{0.5em}
-        \item JIT compiler 
-        \vspace{0.5em}
-        \item integrated autodiff
-        \vspace{0.5em}
-        \item automatically / transparently supports CPUs / GPUs / TPUs 
+        \item $\triangleright$ for deep learning \underline{and} other kinds of
+            mathematical modeling
     \end{itemize}
+
+    \vspace{0.5em}
+    \vspace{0.5em}
+
+    Let's use them!
 
 \end{frame}
 
