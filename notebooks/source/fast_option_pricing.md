@@ -268,7 +268,7 @@ def compute_call_price_numba_parallel(β=β,
 ```
 
 ```{code-cell} ipython3
-%time compute_call_price_numba_parallel(M=100_000_000)
+%time compute_call_price_numba_parallel()
 ```
 
 ## JAX Version
