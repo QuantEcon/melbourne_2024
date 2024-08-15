@@ -59,9 +59,11 @@ We study an elementary model where
 
 An unemployed worker tries to maximize an expected sum of discounted lifetime payoffs.
 
++++
+
 ### Set up
 
-The wage offer process obeys
+We consider a wage offer process
 
 $$
     W_{t+1} = \rho W_t + \nu Z_{t+1}
@@ -69,15 +71,20 @@ $$
 
 where $(Z_t)_{t \geq 0}$ is IID and standard normal.
 
-We discretize this wage process using Tauchen's method to produce a stochastic matrix $P$
+We discretize this wage process using Tauchen's method to produce
+
+* an $n \times n$ stochastic matrix $P$ and
+* a set of possible wage values $\{w_1, \ldots, w_n\}$
 
 Since jobs are permanent, the return to accepting wage offer $w$ today is
 
 $$
-    w + \beta w + \beta^2 w + \frac{w}{1-\beta}
+    w + \beta w + \beta^2 w + \cdots = \frac{w}{1-\beta}
 $$
 
 The worker chooses between accepting and rejecting in order to maximize expected lifetime value.
+
++++
 
 ### The Bellman equation
 
@@ -101,8 +108,12 @@ $$
         \right\}
 $$
 
-Here the meaning of $\sigma(w) = 1$ is "stop" (accept), while $\sigma(w) = 0$ is "continue" (reject).
+Here $\mathbf 1$ is an indicator function.
 
+* $\sigma(w) = 1$ means stop (accept offer)
+* $\sigma(w) = 0$ means continue (reject).
+
++++
 
 ### Algorithm
 
@@ -208,11 +219,6 @@ $$
             \frac{w}{1-\beta} \geq c + \beta \sum_{w'} v(w') P(w, w')
         \right\}
 $$
-
-Here $\mathbf 1$ is an indicator function.
-
-* $\sigma(w) = 1$ means stop
-* $\sigma(w) = 0$ means continue.
 
 ```{code-cell} ipython3
 @jax.jit
