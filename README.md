@@ -38,14 +38,6 @@ The workshop will include a session titled Computational Economics in Action, wi
 
 * Date: August 15th 2024
 
-### Schedule
-
-* 13:00-14:00 - Part 1
-* 14:00-14:30 - Afternoon tea
-* 14:30-15:30 - Part 2
-* 15:30-15:45 - Break
-* 15:45-16:30 - Computational economics in action
-
 ### Location
 
 * Room 404, FBE Building 111 Barry St, Carlton
